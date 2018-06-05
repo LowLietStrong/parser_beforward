@@ -12,4 +12,23 @@ class stock{
 
         $db->destroy();
     }
+
+    public static function getListCat($url){
+        $page = hurl::tryLoad($url);
+        if (!$page) return false; 
+
+        $html = new simple_html_dom();
+        $html->load($page);
+
+        $list = array();
+
+        foreach ($html->find('div[class=pc-mode-block] section[class=side-nav-category] ul[class=list-child]') as $cat) {
+        	foreach ($cat->find('a') as $value) {
+        		$href = $value->href;
+        		preg_match('/https:\/\/autoparts.beforward.jp\/search(.*)\?limit=20&direction=desc&sort=sort_year&new_old_type=U&list_type=list/', $href, $cat_herf);
+        		$list[] = $cat_herf[1];
+        	}
+        }
+        return $list;
+    }
 }

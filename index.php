@@ -29,4 +29,7 @@ function set_autoload_class_path($path)
 set_autoload_class_path(__DIR__ . '/helpers/');
 set_autoload_class_path(__DIR__ . '/models/');
 
-category::setCategory();
+
+//$test = stock::getListCat('https://autoparts.beforward.jp/search/TOYOTA/?new_old_type=U');
+
+category::setAllCategoryByModel();

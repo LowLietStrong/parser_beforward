@@ -1,19 +1,24 @@
 <?php
 class category{
 
-    public static function getItems(){
-        
+    public static function getItems($cat_href){
 
         $autoparts = array();
 
         $pageN = 1;
-        while ($page = hurl::tryLoad('https://autoparts.beforward.jp/search/SUZUKI/?page='.$pageN.'&limit=500&list_type=list')) {
+        while ($page = hurl::tryLoad('https://autoparts.beforward.jp/search'.$cat_href.'?page='.$pageN.'&limit=500&list_type=list&new_old_type=U')) {
+            $flag_end_list = true;
+
             $html = new simple_html_dom();
             $html->load($page);
-
-            $table = $html->find('table[class=sp-detail-table]');
+            foreach ($html->find('header[class=filter-options] h2') as $value) {
+                $item_on_page = preg_replace('/items found/', '', $value->plaintext);
+            }
 
             foreach ($html->find('table[class=sp-detail-table] tr') as $item) {
+                $flag_end_list    = false;
+                $flag_broken_item = true;
+
                 foreach ($item->find('td[class=td-ref]') as $value) {
                     $ref = $value->innertext;
                     $ref = explode('<br>', $ref);
@@ -43,13 +48,21 @@ class category{
                 }
                 foreach ($item->find('td[class=td-price] span[class=list-price]') as $value) {
                     $autoparts[$refNo]['CurentPrice'] = trim($value->plaintext);
-                    $autoparts[$refNo]['FullPrice'] = '';
+                    $autoparts[$refNo]['FullPrice']   = '';
+                    $flag_broken_item = false;
                 }
                 foreach ($item->find('td[class=td-price] del') as $value) {
                     $autoparts[$refNo]['FullPrice'] = trim($value->plaintext);
                 }
+                if ($flag_broken_item AND isset($refNo)) {
+                    unset($autoparts[$refNo]);
+                }
             }
-            echo "Finished parsing page $pageN. CountItem: ".count($autoparts)." \n";
+            if ($flag_end_list) {
+                echo "End list. Total: ".count($autoparts)." of $item_on_page\n";
+                break;
+            }
+            echo "$cat_href CountItem: ".count($autoparts)." of $item_on_page\n";
 
             $pageN++;
         }
@@ -57,10 +70,16 @@ class category{
         return $autoparts;
     }
 
-    public static function setCategory(){
-        $items = self::getItems();
-        if (!$items) return false;
-        stock::setCategory($items, 'suzuki_used_04062018');
+    public static function setAllCategoryByModel(){
+        $list_cat = stock::getListCat('https://autoparts.beforward.jp/search/SUZUKI/?new_old_type=U');
+        foreach ($list_cat as $cat_href) {
+            $items = self::getItems($cat_href);
+            if (!$items) continue;
+            stock::setCategory($items, 'suzuki_used_05062018');
+        }
+
     }
+
+
 
 }
